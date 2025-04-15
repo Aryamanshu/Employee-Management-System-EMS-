@@ -1,8 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import TaskList from '../TaskList/TaskList';
+import EditProfile from '../other/EditProfile';
+import ChangePassword from '../other/ChangePassword';
+import { AuthContext } from '../../context/AuthProvider';
 
-const EmployeeDashboard = ({ data }) => {
+const EmployeeDashboard = ({ data: initialData, activeSection }) => {
   const [activeTab, setActiveTab] = useState('tasks');
+  const [userData] = useContext(AuthContext);
+
+  // Get the latest user data from context
+  const getCurrentUserData = () => {
+    if (!userData || !userData.employees || !initialData) return initialData;
+
+    const currentUser = userData.employees.find(emp => emp.email === initialData.email);
+    return currentUser || initialData;
+  };
+
+  // State to track the current user data
+  const [currentData, setCurrentData] = useState(initialData);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Update current data when userData changes
+  useEffect(() => {
+    setCurrentData(getCurrentUserData());
+  }, [userData, initialData]);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Handle profile update
+  const handleProfileUpdate = (updatedEmployee) => {
+    setCurrentData(updatedEmployee);
+    setSuccessMessage('Profile updated successfully!');
+  };
+
+  // Get the current user data
+  const data = currentData;
+
+  // Update active tab based on navigation from sidebar
+  useEffect(() => {
+    if (activeSection) {
+      // Map section names to tab names
+      const sectionToTab = {
+        'dashboard': 'tasks',
+        'my-tasks': 'tasks',
+        'calendar': 'calendar',
+        'profile': 'profile',
+        'performance': 'performance'
+      };
+
+      if (sectionToTab[activeSection] && sectionToTab[activeSection] !== activeTab) {
+        setActiveTab(sectionToTab[activeSection]);
+      }
+    }
+  }, [activeSection]);
 
   if (!data) {
     return <div className="flex justify-center items-center h-full">Loading...</div>;
@@ -16,7 +77,36 @@ const EmployeeDashboard = ({ data }) => {
   const completionRate = totalTasks > 0 ? Math.round((taskStats.completed / totalTasks) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Success message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300 px-4 py-3 rounded-lg shadow-lg max-w-md animate-fadeIn">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>{successMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <EditProfile
+          employee={data}
+          onClose={() => setShowEditProfile(false)}
+          onUpdate={handleProfileUpdate}
+        />
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePassword
+          employee={data}
+          onClose={() => setShowChangePassword(false)}
+        />
+      )}
+
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
@@ -165,8 +255,18 @@ const EmployeeDashboard = ({ data }) => {
                 <h3 className="text-xl font-bold text-neutral-900 dark:text-white">{data.firstName}</h3>
                 <p className="text-neutral-600 dark:text-neutral-400">{data.email}</p>
                 <div className="mt-4 flex space-x-2">
-                  <button className="btn-primary py-1 px-3 text-sm">Edit Profile</button>
-                  <button className="btn-outline py-1 px-3 text-sm">Change Password</button>
+                  <button
+                    onClick={() => setShowEditProfile(true)}
+                    className="btn-primary py-1 px-3 text-sm"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => setShowChangePassword(true)}
+                    className="btn-outline py-1 px-3 text-sm"
+                  >
+                    Change Password
+                  </button>
                 </div>
               </div>
             </div>
@@ -198,5 +298,19 @@ const EmployeeDashboard = ({ data }) => {
     </div>
   );
 };
+
+// Add animation keyframes
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+`;
+document.head.appendChild(style);
 
 export default EmployeeDashboard;
