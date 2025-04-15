@@ -10,7 +10,7 @@
 <div align="center">
   <p>A modern, responsive employee management system with task tracking, analytics, and team collaboration features.</p>
   
-  <a href="https://ems-aryamanshu.netlify.app/" target="_blank">View Live Demo</a>
+  <a href="https://ems-by-arya.netlify.app/" target="_blank">View Live Demo</a>
 </div>
 
 ---
